@@ -1,0 +1,14 @@
+{
+  "name": "tc-sales-navigator-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "kv:create": "wrangler kv namespace create tc-sales-navigator-config"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

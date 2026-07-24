@@ -1,0 +1,8 @@
+name = "tc-sales-navigator-api"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+# --- KV (Settings tab storage: API keys + passphrase, nothing else) ---
+[[kv_namespaces]]
+binding = "CONFIG_KV"
+id = "73d4450b63dc49c88dd51e706638bf94"   # from: wrangler kv namespace create tc-sales-navigator-config
