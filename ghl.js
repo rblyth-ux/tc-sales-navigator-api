@@ -11,65 +11,66 @@ const GHL_BASE = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-07-28';
 
 function ghlHeaders(env) {
-  return {
-    Authorization: `Bearer ${env.GHL_API_KEY}`,
-    Version: GHL_VERSION,
-    'Content-Type': 'application/json',
-  };
+     return {
+            Authorization: `Bearer ${env.GHL_API_KEY}`,
+            Version: GHL_VERSION,
+            'Content-Type': 'application/json',
+     };
 }
 
 function outcomeFieldKey(env) {
-  return env.GHL_OUTCOME_FIELD_KEY || 'tcsn_outcome';
+     return env.GHL_OUTCOME_FIELD_KEY || 'tcsn_outcome';
 }
 function lossReasonFieldKey(env) {
-  return env.GHL_LOSS_REASON_FIELD_KEY || 'tcsn_loss_reason';
+     return env.GHL_LOSS_REASON_FIELD_KEY || 'tcsn_loss_reason';
 }
 function adIdFieldKey(env) {
-  return env.GHL_AD_ID_FIELD_KEY || 'ad_id';
+     return env.GHL_AD_ID_FIELD_KEY || 'ad_id';
 }
 
 export async function ghlPing(env) {
-  if (!env.GHL_API_KEY || !env.GHL_LOCATION_ID) return false;
-  try {
-    const res = await fetch(`${GHL_BASE}/locations/${env.GHL_LOCATION_ID}`, { headers: ghlHeaders(env) });
-    return res.ok;
-  } catch {
-    return false;
-  }
+     if (!env.GHL_API_KEY || !env.GHL_LOCATION_ID) return false;
+     try {
+            const res = await fetch(`${GHL_BASE}/locations/${env.GHL_LOCATION_ID}`, { headers: ghlHeaders(env) });
+            return res.ok;
+     } catch {
+            return false;
+     }
 }
 
 /** Pull calendar events in a window. */
 async function fetchAppointments(env, { startMs, endMs }) {
-  const url = new URL(`${GHL_BASE}/calendars/events`);
-  url.searchParams.set('locationId', env.GHL_LOCATION_ID);
-  url.searchParams.set('startTime', String(startMs));
-  url.searchParams.set('endTime', String(endMs));
-  const res = await fetch(url, { headers: ghlHeaders(env) });
-  if (!res.ok) throw new Error(`GHL appointments fetch failed: ${res.status}`);
-  const data = await res.json();
-  return data.events || [];
+     if (!env.GHL_API_KEY || !env.GHL_LOCATION_ID) return [];
+     const url = new URL(`${GHL_BASE}/calendars/events`);
+     url.searchParams.set('locationId', env.GHL_LOCATION_ID);
+     url.searchParams.set('startTime', String(startMs));
+     url.searchParams.set('endTime', String(endMs));
+     const res = await fetch(url, { headers: ghlHeaders(env) });
+     if (!res.ok) throw new Error(`GHL appointments fetch failed: ${res.status}`);
+     const data = await res.json();
+     return data.events || [];
 }
 
 function readCustomField(contact, key) {
-  const f = (contact.customFields || []).find((cf) => cf.key === key || cf.id === key);
-  return f ? f.value : null;
+     const f = (contact.customFields || []).find((cf) => cf.key === key || cf.id === key);
+     return f ? f.value : null;
 }
 
 async function fetchContact(env, contactId) {
-  const res = await fetch(`${GHL_BASE}/contacts/${contactId}`, { headers: ghlHeaders(env) });
-  if (!res.ok) return null;
-  const data = await res.json();
-  const c = data.contact;
-  if (!c) return null;
-  return {
-    id: c.id,
-    name: [c.firstName, c.lastName].filter(Boolean).join(' ') || c.name || c.email || c.phone,
-    phone: c.phone,
-    email: c.email,
-    adId: readCustomField(c, adIdFieldKey(env)),
-    outcome: readCustomField(c, outcomeFieldKey(env)),
-    lossReason: readCustomField(c, lossReasonFieldKey(env)),
-  };
+     const res = await fetch(`${GHL_BASE}/contacts/${contactId}`, { headers: ghlHeaders(env) });
+     if (!res.ok) return null;
+     const data = await res.json();
+     const c = data.contact;
+     if (!c) return null;
+     return {
+            id: c.id,
+            name: [c.firstName, c.lastName].filter(Boolean).join(' ') || c.name || c.email || c.phone,
+            phone: c.phone,
+            email: c.email,
+            adId: readCustomField(c, adIdFieldKey(env)),
+            outcome: readCustomField(c, outcomeFieldKey(env)),
+            lossReason: readCustomField(c, lossReasonFieldKey(env)),
+     };
 }
 
 const APPT_STATUS_FALLBACK = { showed: 'show', noshow: 'no_show', cancelled: 'reschedule' };
@@ -77,50 +78,50 @@ const APPT_STATUS_FALLBACK = { showed: 'show', noshow: 'no_show', cancelled: 're
 /** Appointments in a window, each resolved with its contact (attribution +
  *  outcome). This is the one live call the whole dashboard is built on. */
 export async function fetchAppointmentsWithContacts(env, { startMs, endMs }) {
-  const events = await fetchAppointments(env, { startMs, endMs });
-  const withContacts = await Promise.all(
-    events.map(async (evt) => {
-      const contact = evt.contactId ? await fetchContact(env, evt.contactId) : null;
-      const outcome = contact?.outcome || APPT_STATUS_FALLBACK[evt.appointmentStatus] || null;
-      return {
-        id: evt.id,
-        contactId: evt.contactId,
-        startTime: evt.startTime,
-        calendarName: evt.calendarName || evt.title,
-        adId: contact?.adId || null,
-        contactName: contact?.name || 'Unknown',
-        outcome,
-        lossReason: contact?.lossReason || null,
-      };
-    })
-  );
-  return withContacts;
+     const events = await fetchAppointments(env, { startMs, endMs });
+     const withContacts = await Promise.all(
+            events.map(async (evt) => {
+                     const contact = evt.contactId ? await fetchContact(env, evt.contactId) : null;
+                     const outcome = contact?.outcome || APPT_STATUS_FALLBACK[evt.appointmentStatus] || null;
+                     return {
+                                id: evt.id,
+                                contactId: evt.contactId,
+                                startTime: evt.startTime,
+                                calendarName: evt.calendarName || evt.title,
+                                adId: contact?.adId || null,
+                                contactName: contact?.name || 'Unknown',
+                                outcome,
+                                lossReason: contact?.lossReason || null,
+                     };
+            })
+          );
+     return withContacts;
 }
 
 /** Write a call outcome back onto the contact (source of truth) and the
  *  native appointment status (so GHL's own calendar reflects it too). */
 export async function pushOutcomeToGhl(env, { appointmentId, contactId, outcome, reason }) {
-  const statusMap = { show: 'showed', no_show: 'noshow', sale: 'showed', reschedule: 'cancelled', disqualified: 'showed' };
+     const statusMap = { show: 'showed', no_show: 'noshow', sale: 'showed', reschedule: 'cancelled', disqualified: 'showed' };
 
   await fetch(`${GHL_BASE}/calendars/events/appointments/${appointmentId}`, {
-    method: 'PUT',
-    headers: ghlHeaders(env),
-    body: JSON.stringify({ appointmentStatus: statusMap[outcome] || 'confirmed' }),
+         method: 'PUT',
+         headers: ghlHeaders(env),
+         body: JSON.stringify({ appointmentStatus: statusMap[outcome] || 'confirmed' }),
   });
 
   if (contactId) {
-    const customField = [{ key: outcomeFieldKey(env), field_value: outcome }];
-    if (reason) customField.push({ key: lossReasonFieldKey(env), field_value: reason });
-    await fetch(`${GHL_BASE}/contacts/${contactId}`, {
-      method: 'PUT',
-      headers: ghlHeaders(env),
-      body: JSON.stringify({ customFields: customField }),
-    });
+         const customField = [{ key: outcomeFieldKey(env), field_value: outcome }];
+         if (reason) customField.push({ key: lossReasonFieldKey(env), field_value: reason });
+         await fetch(`${GHL_BASE}/contacts/${contactId}`, {
+                  method: 'PUT',
+                  headers: ghlHeaders(env),
+                  body: JSON.stringify({ customFields: customField }),
+         });
 
-    await fetch(`${GHL_BASE}/contacts/${contactId}/notes`, {
-      method: 'POST',
-      headers: ghlHeaders(env),
-      body: JSON.stringify({ body: `TC Sales Navigator — outcome: ${outcome}${reason ? `. Reason: ${reason}` : ''}` }),
-    });
+       await fetch(`${GHL_BASE}/contacts/${contactId}/notes`, {
+                method: 'POST',
+                headers: ghlHeaders(env),
+                body: JSON.stringify({ body: `TC Sales Navigator — outcome: ${outcome}${reason ? `. Reason: ${reason}` : ''}` }),
+       });
   }
 }
