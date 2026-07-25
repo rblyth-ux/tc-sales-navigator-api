@@ -3,7 +3,7 @@
    Meta; the only thing persisted here is whatever Rob pastes into Settings
    (in a KV namespace), gated by a passphrase set on first save. */
 
-import { ghlPing, pushOutcomeToGhl , listCalendars } from './ghl.js';
+import { ghlPing, pushOutcomeToGhl , listCalendars, fetchEventsForCalendar } from './ghl.js';
 import { metaPing } from './meta.js';
 import { getFunnelMetrics, getAdMetrics, getAppointmentsSplit } from './metrics.js';
 import { resolveCredentials, getConfigStatus, applyConfigUpdate } from './config.js';
@@ -38,6 +38,15 @@ export default {
                if (path === '/api/debug/calendars' && request.method === 'GET') {
                             const cfg = await resolveCredentials(env);
                             return json({ calendars: await listCalendars(cfg) });
+               }
+
+               if (path === '/api/debug/events' && request.method === 'GET') {
+                            const cfg = await resolveCredentials(env);
+                            const days = Number(url.searchParams.get('days') || 90);
+                            const calendarId = url.searchParams.get('calendarId') || cfg.GHL_CALENDAR_ID || '';
+                            const now = Date.now();
+                            const events = await fetchEventsForCalendar(cfg, { startMs: now - days * 86400000, endMs: now + days * 86400000, calendarId });
+                            return json({ calendarId, count: events.length, events });
                }
 
       if (path === '/api/config' && request.method === 'GET') {
