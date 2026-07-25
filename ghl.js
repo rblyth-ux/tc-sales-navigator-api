@@ -1,4 +1,4 @@
-—/* GoHighLevel API helpers (LeadConnector v2 REST API).
+/* GoHighLevel API helpers (LeadConnector v2 REST API).
    Docs: https://highlevel.stoplight.io/docs/integrations
    Auth: private integration / API key as Bearer token, plus locationId.
 
