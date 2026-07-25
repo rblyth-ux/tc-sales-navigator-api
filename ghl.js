@@ -1,4 +1,4 @@
-/* GoHighLevel API helpers (LeadConnector v2 REST API).
+—/* GoHighLevel API helpers (LeadConnector v2 REST API).
    Docs: https://highlevel.stoplight.io/docs/integrations
    Auth: private integration / API key as Bearer token, plus locationId.
 
@@ -36,6 +36,19 @@ export async function ghlPing(env) {
      } catch {
             return false;
      }
+}
+
+export async function listCalendars(env) {
+     if (!env.GHL_API_KEY || !env.GHL_LOCATION_ID) return [];
+     const url = new URL(`${GHL_BASE}/calendars/`);
+     url.searchParams.set('locationId', env.GHL_LOCATION_ID);
+     const res = await fetch(url, { headers: ghlHeaders(env) });
+     if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            throw new Error(`GHL calendars fetch failed: ${res.status} ${errText}`);
+     }
+     const data = await res.json();
+     return (data.calendars || []).map((c) => ({ id: c.id, name: c.name }));
 }
 
 /** Pull calendar events in a window. GHL's v2 calendars/events endpoint wants
