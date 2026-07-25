@@ -54,15 +54,15 @@ export async function listCalendars(env) {
 }
 
 /** Pull calendar events in a window. GHL's v2 calendars/events endpoint wants
-   *  startTime/endTime as ISO-8601 strings, plus exactly one of
+      * startTime/endTime as millisecond timestamps, plus exactly one of
       *  calendarId/groupId/userId. If GHL_CALENDAR_ID isn't set we fetch every
          *  calendar on the location and merge results, so no appointments get
             *  missed just because they're on a different calendar. */
   export async function fetchEventsForCalendar(env, { startMs, endMs, calendarId, userId }) {
          const url = new URL(`${GHL_BASE}/calendars/events`);
          url.searchParams.set('locationId', env.GHL_LOCATION_ID);
-         url.searchParams.set('startTime', new Date(startMs).toISOString());
-         url.searchParams.set('endTime', new Date(endMs).toISOString());
+         url.searchParams.set('startTime', String(startMs));
+         url.searchParams.set('endTime', String(endMs));
          if (calendarId) url.searchParams.set('calendarId', calendarId);
          if (userId) url.searchParams.set('userId', userId);
          const res = await fetch(url, { headers: ghlHeaders(env) });
