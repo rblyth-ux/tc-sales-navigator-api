@@ -18,6 +18,7 @@ export async function metaPing(env) {
 
 /** Ad-level spend + lead counts for a date range (YYYY-MM-DD). */
 export async function fetchAdInsights(env, { since, until }) {
+   if (!env.META_ACCESS_TOKEN || !env.META_AD_ACCOUNT_ID) return [];
   const fields = ['ad_id', 'ad_name', 'campaign_name', 'adset_name', 'spend', 'actions'].join(',');
   const url = new URL(`${GRAPH_BASE}/${env.META_AD_ACCOUNT_ID}/insights`);
   url.searchParams.set('level', 'ad');
