@@ -58,7 +58,7 @@ export async function listCalendars(env) {
       *  calendarId/groupId/userId. If GHL_CALENDAR_ID isn't set we fetch every
          *  calendar on the location and merge results, so no appointments get
             *  missed just because they're on a different calendar. */
-  async function fetchEventsForCalendar(env, { startMs, endMs, calendarId, userId }) {
+  export async function fetchEventsForCalendar(env, { startMs, endMs, calendarId, userId }) {
          const url = new URL(`${GHL_BASE}/calendars/events`);
          url.searchParams.set('locationId', env.GHL_LOCATION_ID);
          url.searchParams.set('startTime', new Date(startMs).toISOString());
