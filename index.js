@@ -3,15 +3,15 @@
    Meta; the only thing persisted here is whatever Rob pastes into Settings
    (in a KV namespace), gated by a passphrase set on first save. */
 
-import { ghlPing, pushOutcomeToGhl , listCalendars, fetchEventsForCalendar } from './ghl.js';
+import { ghlPing, pushOutcomeToGhl } from './ghl.js';
 import { metaPing } from './meta.js';
 import { getFunnelMetrics, getAdMetrics, getAppointmentsSplit } from './metrics.js';
-import { resolveCredentials, getConfigStatus, applyConfigUpdate } from './config.js';
+import { resolveCredentials, getConfigStatus, applyConfigUpdate, verifyPassphrase } from './config.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, X-App-Passphrase',
 };
 
 function json(data, init = {}) {
@@ -29,27 +29,20 @@ export default {
     const path = url.pathname;
 
     try {
+           const isConfigWrite = path === '/api/config' && request.method === 'POST';
+           if (!isConfigWrite) {
+                    const passphrase = request.headers.get('X-App-Passphrase') || '';
+                    const authed = await verifyPassphrase(env, passphrase);
+                    if (!authed) return json({ error: 'Unauthorized' }, { status: 401 });
+           }
+       
       if (path === '/api/status' && request.method === 'GET') {
         const cfg = await resolveCredentials(env);
         const [ghl, meta] = await Promise.all([ghlPing(cfg), metaPing(cfg)]);
         return json({ ghl, ghlCalendar: ghl, meta });
       }
 
-               if (path === '/api/debug/calendars' && request.method === 'GET') {
-                            const cfg = await resolveCredentials(env);
-                            return json({ calendars: await listCalendars(cfg) });
-               }
-
-               if (path === '/api/debug/events' && request.method === 'GET') {
-                            const cfg = await resolveCredentials(env);
-                            const days = Number(url.searchParams.get('days') || 90);
-                            const calendarId = url.searchParams.get('calendarId') || cfg.GHL_CALENDAR_ID || '';
-                            const now = Date.now();
-                            const events = await fetchEventsForCalendar(cfg, { startMs: now - days * 86400000, endMs: now + days * 86400000, calendarId });
-                            return json({ calendarId, count: events.length, events });
-               }
-
-      if (path === '/api/config' && request.method === 'GET') {
+             if (path === '/api/config' && request.method === 'GET') {
         return json(await getConfigStatus(env));
       }
 
