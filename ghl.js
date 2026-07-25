@@ -79,9 +79,10 @@ export async function listCalendars(env) {
          }
          const calendars = await listCalendars(env);
          if (!calendars.length) return [];
-         const results = await Promise.all(
-                  calendars.map((c) => fetchEventsForCalendar(env, { startMs, endMs, calendarId: c.id }))
-                );
+const results = [];
+         for (const c of calendars) {
+                  results.push(await fetchEventsForCalendar(env, { startMs, endMs, calendarId: c.id }));
+         }
          const seen = new Set();
          const merged = [];
          for (const events of results) {
