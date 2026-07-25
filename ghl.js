@@ -31,7 +31,9 @@ function adIdFieldKey(env) {
 export async function ghlPing(env) {
      if (!env.GHL_API_KEY || !env.GHL_LOCATION_ID) return false;
      try {
-            const res = await fetch(`${GHL_BASE}/locations/${env.GHL_LOCATION_ID}`, { headers: ghlHeaders(env) });
+            const url = new URL(`${GHL_BASE}/calendars/`);
+              url.searchParams.set('locationId', env.GHL_LOCATION_ID);
+              const res = await fetch(url, { headers: ghlHeaders(env) });
             return res.ok;
      } catch {
             return false;
