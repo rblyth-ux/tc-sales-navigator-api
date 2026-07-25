@@ -34,6 +34,15 @@ export async function resolveCredentials(env) {
   return merged;
 }
 
+export async function verifyPassphrase(env, passphrase) {
+     const cfg = await getConfig(env);
+     const hash = cfg.ADMIN_PASSPHRASE_HASH;
+     if (!hash) return true;
+     if (!passphrase) return false;
+     const candidate = await sha256Hex(passphrase);
+     return candidate === hash;
+}
+
 function mask(v) {
   return v ? `****${String(v).slice(-4)}` : null;
 }
