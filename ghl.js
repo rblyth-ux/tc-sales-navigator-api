@@ -124,24 +124,29 @@ const APPT_STATUS_FALLBACK = { showed: 'show', noshow: 'no_show', cancelled: 're
 /** Appointments in a window, each resolved with its contact (attribution +
  *  outcome). This is the one live call the whole dashboard is built on. */
 export async function fetchAppointmentsWithContacts(env, { startMs, endMs }) {
-     const events = await fetchAppointments(env, { startMs, endMs });
-     const withContacts = await Promise.all(
-            events.map(async (evt) => {
-                     const contact = evt.contactId ? await fetchContact(env, evt.contactId) : null;
-                     const outcome = contact?.outcome || APPT_STATUS_FALLBACK[evt.appointmentStatus] || null;
-                     return {
-                                id: evt.id,
-                                contactId: evt.contactId,
-                                startTime: evt.startTime,
-                                calendarName: evt.calendarName || evt.title,
-                                adId: contact?.adId || null,
-                                contactName: contact?.name || 'Unknown',
-                                outcome,
-                                lossReason: contact?.lossReason || null,
-                     };
-            })
-          );
-     return withContacts;
+  const events = await fetchAppointments(env, { startMs, endMs });
+     const uniqueContactIds = [...new Set(events.map((evt) => evt.contactId).filter(Boolean))];
+     const contactMap = new Map();
+     const BATCH_SIZE = 8;
+     for (let i = 0; i < uniqueContactIds.length; i += BATCH_SIZE) {
+            const batch = uniqueContactIds.slice(i, i + BATCH_SIZE);
+            const results = await Promise.all(batch.map((id) => fetchContact(env, id)));
+            batch.forEach((id, idx) => contactMap.set(id, results[idx]));
+     }
+     return events.map((evt) => {
+            const contact = evt.contactId ? contactMap.get(evt.contactId) : null;
+            const outcome = contact?.outcome || APPT_STATUS_FALLBACK[evt.appointmentStatus] || null;
+            return {
+                     id: evt.id,
+                     contactId: evt.contactId,
+                     startTime: evt.startTime,
+                     calendarName: evt.calendarName || evt.title,
+                     adId: contact?.adId || null,
+                     contactName: contact?.name || 'Unknown',
+                     outcome,
+                     lossReason: contact?.lossReason || null,
+            };
+     });
 }
 
 /** Write a call outcome back onto the contact (source of truth) and the
