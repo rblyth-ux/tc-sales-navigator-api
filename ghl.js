@@ -38,15 +38,21 @@ export async function ghlPing(env) {
      }
 }
 
-/** Pull calendar events in a window. */
+/** Pull calendar events in a window. GHL's v2 calendars/events endpoint wants
+ *  startTime/endTime as ISO-8601 strings, not raw epoch ms. */
 async function fetchAppointments(env, { startMs, endMs }) {
      if (!env.GHL_API_KEY || !env.GHL_LOCATION_ID) return [];
      const url = new URL(`${GHL_BASE}/calendars/events`);
      url.searchParams.set('locationId', env.GHL_LOCATION_ID);
-     url.searchParams.set('startTime', String(startMs));
-     url.searchParams.set('endTime', String(endMs));
+     url.searchParams.set('startTime', new Date(startMs).toISOString());
+     url.searchParams.set('endTime', new Date(endMs).toISOString());
+     if (env.GHL_CALENDAR_ID) url.searchParams.set('calendarId', env.GHL_CALENDAR_ID);
+     if (env.GHL_USER_ID) url.searchParams.set('userId', env.GHL_USER_ID);
      const res = await fetch(url, { headers: ghlHeaders(env) });
-     if (!res.ok) throw new Error(`GHL appointments fetch failed: ${res.status}`);
+     if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            throw new Error(`GHL appointments fetch failed: ${res.status} ${errText}`);
+     }
      const data = await res.json();
      return data.events || [];
 }
